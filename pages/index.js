@@ -1,64 +1,107 @@
+import { useEffect, useState } from 'react'
 import Head from 'next/head'
 import styles from '../styles/Home.module.css'
 
-export default function Home() {
+const  defaultEndpoint = "https://rickandmortyapi.com/api/character";
+
+//funcion para llamar a la API
+export async function getServerSideProps(){
+  const res = await fetch(defaultEndpoint);
+  const data = await res.json();
+  return{
+    props: {
+      data
+    }
+  }
+}
+
+
+
+export default function Home({ data }) {
+  const { info, results: defaultResults = [] } = data;
+  const [results, setResults] = useState(defaultResults);
+  const [page, setPage] = useState({
+    ...info,
+    current: defaultEndpoint
+  });
+
+  const { current }= page;
+
+  useEffect(() => {
+    if (current === defaultEndpoint ) return;
+    async function request() {
+      const res = await fetch(current)
+      const nextData = await res.json();
+
+      setPage({
+        current,
+        ...nextData.info
+      });
+
+      if ( !nextData.info?.prev ) {
+        setResults(nextData.results);
+        return;
+      }
+
+      setResults( prev => {
+        return [
+          ...prev,
+          ...nextData.results
+        ]
+      });
+    }
+
+    request();
+  }, [current]);
+
+  function handleLoadMore() {
+    setPage(prev => {
+      return {
+        ...prev,
+        current: page?.next
+      }
+    });
+  }
+
   return (
     <div className={styles.container}>
       <Head>
-        <title>Create Next App</title>
+        <title>Rick and Morty Wiki App</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
       <main className={styles.main}>
         <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
+          Rick and Morty Wiki App
         </h1>
-
+        
         <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
+          Wubba Lubba Dub dub !!!
         </p>
 
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h3>Documentation &rarr;</h3>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
+        <ul className={styles.grid}>
+          {results.map(result => {
+            const { id, name, image } = result;
 
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h3>Learn &rarr;</h3>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
+            return (
+              <li key={ id } className={styles.card}>
+            <a>
+              <h3>{ name }</h3>
+              <img src={image} alt ={name}/>
+            </a>
+          </li>
+            )
+          })}
+        </ul>
 
-          <a
-            href="https://github.com/vercel/next.js/tree/master/examples"
-            className={styles.card}
-          >
-            <h3>Examples &rarr;</h3>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
+        <p>
+          <button onClick={handleLoadMore}>Give me more...</button>
+        </p>
 
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h3>Deploy &rarr;</h3>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
-        </div>
       </main>
 
       <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <img src="/vercel.svg" alt="Vercel Logo" className={styles.logo} />
-        </a>
+        <p>Made by NOE-PS</p>
       </footer>
     </div>
   )
